@@ -3,8 +3,8 @@ services:
     image: postgres
     container_name: database
     build:
-      context: .
-      dockerfile: Database/Dockerfile
+      context: ./Database
+      dockerfile: Dockerfile
     ports:
       - "5438:5432"
     environment: 
@@ -21,8 +21,8 @@ services:
     image: agente
     container_name: agente
     build: 
-      context: .
-      dockerfile: Agente/Dockerfile    
+      context: ./Agente
+      dockerfile: Dockerfile    
     environment:
       - DBHOST=database
       - DBPORT=5432
@@ -40,8 +40,8 @@ services:
   nodo:
     image: nodo
     build: 
-      context: .
-      dockerfile: Nodo/Dockerfile    
+      context: ./Nodo
+      dockerfile: Dockerfile    
     environment:
       - DBHOST=database
       - DBPORT=5432
@@ -60,8 +60,8 @@ services:
     image: cliente
     container_name: cliente
     build: 
-      context: .
-      dockerfile: Cliente/Dockerfile    
+      context: ./Cliente
+      dockerfile: Dockerfile    
     environment:
       - AGENTE_HOST=agente
       - PYTHONUNBUFFERED=1

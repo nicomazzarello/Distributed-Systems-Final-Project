@@ -11,4 +11,4 @@ LABEL author="Distribuidos"
 LABEL description="Base de Datos del Proyecto"
 LABEL version="1.0"
 
-COPY /Database/backup.sql /docker-entrypoint-initdb.d/
+COPY ./backup.sql /docker-entrypoint-initdb.d/
