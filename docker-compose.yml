@@ -1,0 +1,70 @@
+services:
+  database:
+    image: postgres
+    container_name: database
+    build:
+      context: .
+      dockerfile: Database/Dockerfile
+    ports:
+      - "5438:5432"
+    environment: 
+      - POSTGRES_DB=Distribuidos
+      - PGUSER=postgres
+      - POSTGRES_PASSWORD=1234
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 1s
+      retries: 5
+    restart: always
+  agente:
+    image: agente
+    container_name: agente
+    build: 
+      context: .
+      dockerfile: Agente/Dockerfile    
+    environment:
+      - DBHOST=database
+      - DBPORT=5432
+      - DBNAME=Distribuidos
+      - DBUSER=postgres
+      - DBPASSWORD=1234
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    restart: always
+  nodo:
+    image: nodo
+    build: 
+      context: .
+      dockerfile: Nodo/Dockerfile    
+    environment:
+      - DBHOST=database
+      - DBPORT=5432
+      - DBNAME=Distribuidos
+      - DBUSER=postgres
+      - DBPASSWORD=1234
+      - AGENTE_HOST=agente
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      database:
+        condition: service_healthy
+    deploy:
+      replicas: 3
+    restart: always
+  cliente:
+    image: cliente
+    container_name: cliente
+    build: 
+      context: .
+      dockerfile: Cliente/Dockerfile    
+    environment:
+      - AGENTE_HOST=agente
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "22:22"
+    restart: always
