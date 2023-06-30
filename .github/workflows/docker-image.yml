@@ -1,0 +1,32 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - name: Build the Cliente Docker image
+      run: docker build ./Cliente --file Dockerfile --tag nicomazzarello/proyecto-distribuidos:cliente
+    - name: Build the Agente Docker image
+      run: docker build ./Agente --file Dockerfile --tag nicomazzarello/proyecto-distribuidos:agente
+    - name: Build the Database Docker image
+      run: docker build ./Database --file Dockerfile --tag nicomazzarello/proyecto-distribuidos:postgres
+    - name: Build the Nodo Docker image
+      run: docker build ./Nodo --file Dockerfile --tag nicomazzarello/proyecto-distribuidos:nodo      
+    - name: Docker Push
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos
