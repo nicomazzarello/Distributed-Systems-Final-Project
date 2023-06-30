@@ -29,10 +29,10 @@ jobs:
     - name: Build the Cliente Docker image
       run: docker build ./Cliente --tag nicomazzarello/proyecto-distribuidos:cliente      
     - name: Docker Push Nodo
-      run: docker push ${{ENV.DOCKER_USER}}/proyecto-distribuidos:nodo
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:nodo
     - name: Docker Push Agente
-      run: docker push ${{ENV.DOCKER_USER}}/proyecto-distribuidos:agente
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:agente
     - name: Docker Push Database
-      run: docker push ${{ENV.DOCKER_USER}}/proyecto-distribuidos:postgres
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:postgres
     - name: Docker Push Cliente
-      run: docker push ${{ENV.DOCKER_USER}}/proyecto-distribuidos:cliente
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:cliente
