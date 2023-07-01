@@ -251,6 +251,7 @@ class DataNode:
             socket.recv(65507).decode()
 
             if resp == 0:
+                self.enviarMensaje(socket, "0")
                 return 0
             
             for noticia in resp:
