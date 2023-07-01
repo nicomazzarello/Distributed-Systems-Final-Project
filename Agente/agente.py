@@ -292,15 +292,23 @@ class MasterNode:
             
             # Crear un cursor
             cursor = conn.cursor()
-            # Ejecutar una consulta INSERT
-            cursor.execute('INSERT INTO auth.nodos (ip, puerto) VALUES (%s, %s)', (cliente[0], nodo_puerto))
-            # Confirmar los cambios en la base de datos
-            conn.commit()
+
+            cursor.execute(f"""SELECT 1 
+                            FROM auth.nodos
+                            WHERE ip = \'{cliente[0]}\'
+                            AND puerto = {nodo_puerto}""")
+            
+            if cursor.rowcount == 0:           
+                # Ejecutar una consulta INSERT
+                cursor.execute('INSERT INTO auth.nodos (ip, puerto) VALUES (%s, %s)', (cliente[0], nodo_puerto))
+                # Confirmar los cambios en la base de datos
+                conn.commit()
+                self.reordenarNodos()
+                return f"Subscripcion exitosa del nodo: {cliente[0]}:{nodo_puerto}"
+
             # Cerrar el cursor
             cursor.close()
-
-            self.reordenarNodos()
-            return f"Subscripcion exitosa del nodo: {cliente[0]}:{nodo_puerto}"
+            return f"Nodo ya suscripto"            
 
     def obtenerNodoArea(self,area):
         salida =""
@@ -345,7 +353,7 @@ class MasterNode:
             server_sock_nodos.listen()
 
             print(f"Nodo maestro en ejecución en {host}:{port_clientes} y {host}:{port_nodos}...")
-                    
+
             # Manejar la solicitud del cliente en un hilo separado
             client_handler = MasterClientHandler(server_sock_clientes, self)
             client_handler.start()
@@ -441,7 +449,6 @@ class MasterCheckerHandler(threading.Thread):
             try:   
                 # Crear el socket TCP
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
                 # Conectar al nodo maestro
                 sock.connect((i[1], i[2]))
 
@@ -451,7 +458,7 @@ class MasterCheckerHandler(threading.Thread):
                 # Recibir las ubicaciones de nodos del nodo maestro
                 respuesta = sock.recv(65507).decode()
 
-                print(f"Helthcheck {respuesta} - {i[2]}:{i[2]}")
+                print(f"Healthcheck {respuesta} - {i[2]}:{i[2]}")
 
             except ConnectionRefusedError:
                 print("No se pudo conectar al nodo, eliminando.")
