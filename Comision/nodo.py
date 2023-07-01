@@ -40,7 +40,7 @@ class DataNode:
             # Cerrar el socket del servidor
             server_sock.close()
 
-    def clienteSubscrito(self,clienteNom):
+    def clienteSubscrito(self,clienteNom, area):
         cursor = conn.cursor()
         cursor.execute(f"""SELECT 1
                             FROM sys.suscripciones sus
@@ -48,7 +48,9 @@ class DataNode:
                             ON sus.usuarioid = usu.id
                             JOIN sys.areas ar
                             ON sus.areaid = ar.id 
-                            WHERE usu.nombre = (\'{clienteNom}\')""")
+                            WHERE usu.nombre = (\'{clienteNom}\')
+                            AND ar.nombre = (\'{area}\')
+                            """)
 
         if cursor.rowcount == 0:
             return False
@@ -56,16 +58,18 @@ class DataNode:
     
     def obtenerNoticias(self, clienteNom, areanom, ultimoID):
         cursor = conn.cursor()
-        resu = self.clienteSubscrito(clienteNom)
+        resu = self.clienteSubscrito(clienteNom, areanom)
         if not resu:
-            return False
+            return -1
         
         if resu:
             cursor.execute(f"""SELECT texto, noti.id
                                 FROM sys.noticias noti 
                                 JOIN sys.areas ON noti.areaid=areas.id
                                 WHERE nombre = (\'{areanom}\') AND noti.id > {ultimoID}""")
-            rows = cursor.fetchall()       
+            rows = cursor.fetchall()      
+            if cursor.rowcount == 0:
+                return 0; 
             
         # Cerrar el cursor
         cursor.close()
@@ -79,7 +83,7 @@ class DataNode:
         cursor = conn.cursor()
         idCliente = self.obtenerIDdCliente(cliente)
         idArea = self.obtenerIDdArea(area)
-        resu = self.clienteSubscrito(cliente)
+        resu = self.clienteSubscrito(cliente, area)
         if resu:
             cursor.execute(f"""INSERT INTO sys.noticias(areaid, authorid, fecha, texto)
                             VALUES ({idArea},{idCliente},\'{datetime.now()}\',\'{noticia}\')""")
@@ -94,7 +98,7 @@ class DataNode:
         cursor = conn.cursor()
         idCliente = self.obtenerIDdCliente(cliente)
         idArea = self.obtenerIDdArea(area)
-        resu = self.clienteSubscrito(cliente)
+        resu = self.clienteSubscrito(cliente, area)
         if resu:
             cursor.execute(f'DELETE FROM sys.noticias WHERE areaid = \'{idArea}\' AND authorid = \'{idCliente}\' AND texto = \'{noticia}\'')
             if cursor.rowcount > 0:
@@ -237,7 +241,7 @@ class DataNode:
             area = datos[2]
             ultimoID = datos[3]
             resp = self.obtenerNoticias(cliente, area, ultimoID)
-            if not resp:
+            if resp == -1:
                 print(f"Nodo: el cliente {cliente} no esta subscripto")
                 self.enviarMensaje(socket, "-1")
                 return -1
@@ -246,7 +250,7 @@ class DataNode:
             self.enviarMensaje(socket, aux)
             socket.recv(65507).decode()
 
-            if len(resp) == 0:
+            if resp == 0:
                 return 0
             
             for noticia in resp:

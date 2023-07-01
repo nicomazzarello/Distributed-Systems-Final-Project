@@ -289,7 +289,6 @@ class MasterNode:
 
             # Cerrar el socket del servidor
             server_sock_clientes.close()
-            server_sock_nodos.close()           
 
 
 class MasterClientHandler(threading.Thread):
