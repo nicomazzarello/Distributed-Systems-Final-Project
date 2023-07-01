@@ -41,17 +41,20 @@ class Agente:
             # Cerrar la conexión
             sock.close()
 
-    def conectar_al_nodo(self, nodoIP, nodoPuerto):
+    def conectar_al_nodo(self, nodoIP):
         try:
             # Crear el socket TCP
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-            # Obtener la dirección IP y el puerto del nodo
-        
-            node_port = int(nodoPuerto)
+            # Obtener la dirección IP y el puerto del nodo        
+            node_port = 8005
 
-            # Conectar al nodo de datos
-            sock.connect((nodoIP, node_port))
+            try:
+                # Conectar al nodo de datos
+                sock.connect((nodoIP, node_port))
+            except Exception:
+                print("Error al conectar a la comision.")
+                return False
             
             return sock
 
@@ -154,15 +157,15 @@ if __name__ == "__main__":
             operacion = f"SUB|{area}"
             resp = agente.send_and_receive_master(operacion)
             if resp == "ERROR":
-                print(f"No se pudo obtener el nodo que contenga el area {area}")
+                print(f"El area {area} no existe")
             else:
-                datos = resp.split("|")
-                sock = agente.conectar_al_nodo(datos[0],datos[1])
-                operacion = f"SUB|{cliente}|{area}"
-                agente.send_nodo(operacion, sock)
-                respuesta = agente.receive_nodo(sock)
-                print(respuesta)
-                agente.desconectar_del_nodo(sock)
+                sock = agente.conectar_al_nodo(resp)
+                if sock:                     
+                    operacion = f"SUB|{cliente}|{area}"
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "3":
             cliente = clienteActual.obtener_nombre()
@@ -170,15 +173,15 @@ if __name__ == "__main__":
             operacion = f"UNSUB|{area}"
             resp = agente.send_and_receive_master(operacion)
             if resp == "ERROR":
-                print(f"No se pudo obtener el nodo que contenga el area {area}")
+                print(f"El area {area} no existe")
             else:
-                datos = resp.split("|")
-                sock = agente.conectar_al_nodo(datos[0],datos[1])
-                operacion = f"UNSUB|{cliente}|{area}"
-                agente.send_nodo(operacion, sock)
-                respuesta = agente.receive_nodo(sock)
-                print(respuesta)
-                agente.desconectar_del_nodo(sock)
+                sock = agente.conectar_al_nodo(resp)
+                if sock:
+                    operacion = f"UNSUB|{cliente}|{area}"
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "4":
             respuesta = agente.obtenerSuscripciones(clienteActual)
@@ -205,26 +208,25 @@ if __name__ == "__main__":
             if resp == "ERROR":
                 print(f"No existe el area {area}")
             else:
-                datos = resp.split("|")
-                sock = agente.conectar_al_nodo(datos[0],datos[1])
-                agente.send_nodo(operacion, sock)
-                respuesta = agente.receive_nodo(sock)
-                agente.send_nodo("ok", sock)
-                if respuesta == "-1":
-                    print(f"Cliente: {cliente} no esta subscripto al area {area}")
-            
-                elif respuesta == "0":
-                    print(f"El cliente: {cliente} esta al dia")
-                else:
-                    for i in range(int(respuesta)):
-                    
-                        resp = agente.receive_nodo(sock)
-                        agente.send_nodo("ok", sock)
-                        datos = resp.split("|")
-                        clienteActual.lecturas[f"{area}"] = datos[1]
-                        print(datos[0])
-            
-                agente.desconectar_del_nodo(sock)
+                sock = agente.conectar_al_nodo(resp)
+                if sock: 
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    agente.send_nodo("ok", sock)
+                    if respuesta == "-1":
+                        print(f"Cliente: {cliente} no esta subscripto al area {area}")
+                
+                    elif respuesta == "0":
+                        print(f"El cliente: {cliente} esta al dia")
+                    else:
+                        for i in range(int(respuesta)):
+                        
+                            resp = agente.receive_nodo(sock)
+                            agente.send_nodo("ok", sock)
+                            datos = resp.split("|")
+                            clienteActual.lecturas[f"{area}"] = datos[1]
+                            print(datos[0])            
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "6":
             cliente = clienteActual.obtener_nombre()
@@ -235,13 +237,13 @@ if __name__ == "__main__":
             if resp == "ERROR":
                 print(f"No se pudo obtener el nodo que contenga el area {area}")
             else:
-                datos = resp.split("|")
-                sock = agente.conectar_al_nodo(datos[0],datos[1])
-                operacion = f"ADD|{cliente}|{area}|{noticia}"
-                agente.send_nodo(operacion, sock)
-                respuesta = agente.receive_nodo(sock)
-                print(respuesta)
-                agente.desconectar_del_nodo(sock)
+                sock = agente.conectar_al_nodo(resp)
+                if sock:
+                    operacion = f"ADD|{cliente}|{area}|{noticia}"
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "7":
             cliente = clienteActual.obtener_nombre()
@@ -252,13 +254,13 @@ if __name__ == "__main__":
             if resp == "ERROR":
                 print(f"No se pudo obtener el nodo que contenga el area {area}")
             else:
-                datos = resp.split("|")
-                sock = agente.conectar_al_nodo(datos[0],datos[1])
-                operacion = f"DEL|{cliente}|{area}|{noticia}"
-                agente.send_nodo(operacion, sock)
-                respuesta = agente.receive_nodo(sock)
-                print(respuesta)
-                agente.desconectar_del_nodo(sock)
+                sock = agente.conectar_al_nodo(resp)
+                if sock:
+                    operacion = f"DEL|{cliente}|{area}|{noticia}"
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "8":
             print("\nCerrando sesion...\n")

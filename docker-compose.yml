@@ -37,11 +37,30 @@ services:
       - "8000:8000"
       - "8001:8001"
     restart: always
-  nodo:
-    image: nodo
+  comision1:
+    image: comision1
     build: 
-      context: ./Nodo
-      dockerfile: Dockerfile    
+      context: ./Comision
+      dockerfile: Dockerfile1
+    environment:
+      - DBHOST=database
+      - DBPORT=5432
+      - DBNAME=Distribuidos
+      - DBUSER=postgres
+      - DBPASSWORD=1234
+      - AGENTE_HOST=agente
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      database:
+        condition: service_healthy
+    deploy:
+      replicas: 3
+    restart: always
+  comision2:
+    image: comision2
+    build: 
+      context: ./Comision
+      dockerfile: Dockerfile2
     environment:
       - DBHOST=database
       - DBPORT=5432
@@ -61,7 +80,7 @@ services:
     container_name: cliente
     build: 
       context: ./Cliente
-      dockerfile: Dockerfile    
+      dockerfile: Dockerfile 
     environment:
       - AGENTE_HOST=agente
       - PYTHONUNBUFFERED=1

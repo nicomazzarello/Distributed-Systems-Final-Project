@@ -20,16 +20,20 @@ jobs:
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: Build the Nodo Docker image
-      run: docker build ./Nodo --tag nicomazzarello/proyecto-distribuidos:nodo
+    - name: Build the Comision1 Docker image
+      run: docker build ./Nodo -f Dockerfile1 --tag nicomazzarello/proyecto-distribuidos:comision1
+    - name: Build the Comision2 Docker image
+      run: docker build ./Nodo -f Dockerfile2 --tag nicomazzarello/proyecto-distribuidos:comision2
     - name: Build the Agente Docker image
       run: docker build ./Agente --tag nicomazzarello/proyecto-distribuidos:agente
     - name: Build the Database Docker image
       run: docker build ./Database --tag nicomazzarello/proyecto-distribuidos:postgres
     - name: Build the Cliente Docker image
       run: docker build ./Cliente --tag nicomazzarello/proyecto-distribuidos:cliente      
-    - name: Docker Push Nodo
-      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:nodo
+    - name: Docker Push Comision1
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:comision1
+    - name: Docker Push Comision2
+      run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:comision2
     - name: Docker Push Agente
       run: docker push ${{secrets.DOCKER_USER}}/proyecto-distribuidos:agente
     - name: Docker Push Database

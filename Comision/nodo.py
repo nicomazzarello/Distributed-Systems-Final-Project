@@ -1,14 +1,12 @@
 import socket
-import sched
 import threading
 import os
 import psycopg2
 from datetime import datetime
 
 class DataNode:
-    def __init__(self, master_ip, master_port):
-        self.master_ip = master_ip
-        self.master_port = master_port
+    def __init__(self, comision):
+        self.comision = f"comision{comision}"
 
     def start(self):
         # Iniciar el servidor del nodo de datos
@@ -17,48 +15,23 @@ class DataNode:
             server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # Vincular el socket al host y puerto del nodo de datos
-            server_sock.bind(('0.0.0.0', 0))
+            server_sock.bind(('0.0.0.0', 8005))
 
             # Escuchar conexiones entrantes
             server_sock.listen()
 
             localIP = server_sock.getsockname()[0]
             localPort = server_sock.getsockname()[1]
-            print(f"Nodo de datos en ejecución en {localIP}:{localPort}...")
+            print(f"Nodo {self.comision} en ejecución en {localIP}:{localPort}...")                    
             
-            try:
-                # Crear el socket TCP
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            while True:
+                # Aceptar una conexión entrante
+                client_sock, client_addr = server_sock.accept()
+                print(f"Cliente conectado desde {client_addr}")
 
-                # Conectar al nodo maestro
-                sock.connect((self.master_ip, self.master_port))
-                operacion = f"REGISTER|{localIP}|{localPort}"
-                # Enviar la solicitud de noticias al nodo maestro
-                sock.send(operacion.encode())
-
-                # Recibir las ubicaciones de nodos del nodo maestro
-                respuesta = sock.recv(1024).decode()
-                print(respuesta)
-                
-                thread_nodo_checker = MasterCheckerHandler(self, localIP, localPort)
-
-                thread_nodo_checker.start()    
-
-                while True:
-                    # Aceptar una conexión entrante
-                    client_sock, client_addr = server_sock.accept()
-                    print(f"Cliente conectado desde {client_addr}")
-
-                    # Manejar la solicitud del cliente en un hilo separado
-                    client_handler = DataNodeClientHandler(client_sock, self)
-                    client_handler.start()
-
-            except ConnectionRefusedError:
-                print("No se pudo conectar al nodo maestro.")
-
-            finally:
-                # Cerrar la conexión
-                sock.close()  
+                # Manejar la solicitud del cliente en un hilo separado
+                client_handler = DataNodeClientHandler(client_sock, self)
+                client_handler.start()            
            
         except KeyboardInterrupt:
             print(f"Nodo de datos detenido.")
@@ -68,7 +41,6 @@ class DataNode:
             server_sock.close()
 
     def clienteSubscrito(self,clienteNom):
-        salida = ""
         cursor = conn.cursor()
         cursor.execute(f"""SELECT 1
                             FROM sys.suscripciones sus
@@ -85,14 +57,16 @@ class DataNode:
     def obtenerNoticias(self, clienteNom, areanom, ultimoID):
         cursor = conn.cursor()
         resu = self.clienteSubscrito(clienteNom)
+        if not resu:
+            return False
+        
         if resu:
             cursor.execute(f"""SELECT texto, noti.id
                                 FROM sys.noticias noti 
                                 JOIN sys.areas ON noti.areaid=areas.id
                                 WHERE nombre = (\'{areanom}\') AND noti.id > {ultimoID}""")
-            rows = cursor.fetchall() 
-        if cursor.rowcount == 0:
-            return False
+            rows = cursor.fetchall()       
+            
         # Cerrar el cursor
         cursor.close()
         return rows
@@ -294,7 +268,6 @@ class DataNodeClientHandler(threading.Thread):
             request = self.client_sock.recv(1024).decode()
             operacion = request.strip()
 
-
             self.data_node.procesar_operacion(operacion,self.client_sock)
             
         except socket.error as e:
@@ -304,47 +277,9 @@ class DataNodeClientHandler(threading.Thread):
             # Cerrar la conexión con el cliente
             self.client_sock.close()
 
-class MasterCheckerHandler(threading.Thread):
-    def __init__(self, master_node, localIP, localPort):
-        super().__init__()
-        self.master_node = master_node
-        self.localIP = localIP
-        self.localPort = localPort
-
-    def funcion(self):
-        print(f"Registro continuo")
-
-        try:
-            # Crear el socket TCP
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-            # Conectar al nodo maestro
-            sock.connect((self.master_node.master_ip, self.master_node.master_port))
-            operacion = f"REGISTER|{self.localIP}|{self.localPort}"
-
-            # Enviar la solicitud de noticias al nodo maestro
-            sock.send(operacion.encode())
-
-            # Recibir las ubicaciones de nodos del nodo maestro
-            respuesta = sock.recv(1024).decode()
-            print(respuesta)           
-
-        except ConnectionRefusedError:
-            print("No se pudo conectar al nodo maestro.")
-
-        finally:
-            # Cerrar la conexión
-            sock.close()       
-
-    def run(self):
-            while True:
-                sc = sched.scheduler()
-                sc.enter(2, 2, self.funcion)
-                sc.run()
-
 if __name__ == "__main__":
     # Crear el nodo de datos y comenzar el servidor
-    node = DataNode(os.environ["AGENTE_HOST"], 8001)  # Cambia 'localhost' y 8001 por la dirección IP y el puerto del nodo de datos
+    node = DataNode(os.environ["COMISION"])  # Cambia 'localhost' y 8001 por la dirección IP y el puerto del nodo de datos
     
     #Conectamos la base de datos
     conn = psycopg2.connect(
