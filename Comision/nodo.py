@@ -156,6 +156,38 @@ class DataNode:
         cursor.close()
         return id[0]
     
+    def agregarArea(self, area):
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT COUNT(*) FROM sys.areas WHERE nombre = \'{area}\'')
+        id = cursor.fetchone()
+        if id[0] > 0:
+            return False
+        
+        cursor.execute(f'INSERT INTO sys.areas (nombre) VALUES (\'{area}\') RETURNING id')
+        conn.commit()
+        id = cursor.fetchone()
+        new_area_id = id[0]
+
+        cursor.execute(f'SELECT id FROM auth.comisiones WHERE nombre=(\'comision{os.environ["COMISION"]}\')')
+        id = cursor.fetchone()
+        id_nodo_asignado = id[0]
+        cursor.execute(f'INSERT INTO sys.asignaciones (comisionid, areaid) VALUES (\'{id_nodo_asignado}\', \'{new_area_id}\')')
+        conn.commit()       
+        return True
+    
+    def borrarArea(self, area):
+        cursor = conn.cursor()
+
+        cursor.execute(f'SELECT id FROM sys.areas WHERE nombre = \'{area}\'')
+        id = cursor.fetchone()
+        if cursor.rowcount == 0:
+            return False
+        
+        cursor.execute(f'DELETE FROM sys.areas WHERE id = {id[0]}')
+        conn.commit()
+        
+        return True
+    
     def procesar_operacion(self, operacion, socket):
         datos = operacion.split("|")        
         
@@ -205,7 +237,7 @@ class DataNode:
             area = datos[2]
             ultimoID = datos[3]
             resp = self.obtenerNoticias(cliente, area, ultimoID)
-            if resp == False:
+            if not resp:
                 print(f"Nodo: el cliente {cliente} no esta subscripto")
                 self.enviarMensaje(socket, "-1")
                 return -1
@@ -230,7 +262,7 @@ class DataNode:
             area = datos[2]
             noticia = datos[3]
             resp = self.agregarNoticia(cliente, area, noticia)
-            if resp == False:
+            if not resp:
                 msj = f"El cliente {cliente} no pudo agregar la noticia al area {area}" 
                 self.enviarMensaje(socket,msj)
                 return False
@@ -244,7 +276,7 @@ class DataNode:
             area = datos[2]
             noticia = datos[3]
             resp = self.eliminarNoticia(cliente, area, noticia)
-            if resp == False:
+            if not resp:
                 msj = f"El cliente {cliente} no pudo eliminar la noticia al area {area}" 
                 self.enviarMensaje(socket,msj)
                 return False
@@ -252,6 +284,33 @@ class DataNode:
                 msj = f"El cliente {cliente} elimino correctamente la noticia al area {area}"
                 self.enviarMensaje(socket,msj)
                 return True
+            
+        elif accion == "ADD_AREA":
+            area = datos[1]  
+            resultado = self.agregarArea(area)           
+            if resultado == False:
+                msj = f"Error, ya existe esa area de noticias..."
+                self.enviarMensaje(socket,msj)
+                return False
+            else:
+                msj = f"Creacion exitosa del area de noticias: {area}"
+                self.enviarMensaje(socket,msj)
+                return True
+
+        elif accion == "DEL_AREA":
+            area = datos[1]
+            resultado = self.borrarArea(area)           
+            if resultado == False:
+                msj = f"Error, no existe esa area de noticias..."
+                self.enviarMensaje(socket,msj)
+                return False
+            else:
+                msj = f"Eliminacion exitosa del area de noticias: {area}"
+                self.enviarMensaje(socket,msj)
+                return True
+        
+        else:
+            print("Operacion no encontrada")
 
 
 class DataNodeClientHandler(threading.Thread):

@@ -1,7 +1,6 @@
 import socket
 import threading
 import psycopg2
-import sched
 import random
 import os
 
@@ -87,9 +86,9 @@ class MasterNode:
         cursor.close()
         return salida
     
-    def obtenerIdNodoLibre(self):
+    def obtenerNodoLibre(self):
         cursor = conn.cursor()
-        query = ("""SELECT auth.comisiones.id
+        query = ("""SELECT auth.comisiones.nombre
                     FROM auth.comisiones
                     JOIN sys.asignaciones 
                     ON comisiones.id = asignaciones.comisionId
@@ -108,20 +107,7 @@ class MasterNode:
                 
         # Cerrar el cursor
         cursor.close()
-        return salida[0]
-    
-    def borrarArea(self, area):
-        cursor = conn.cursor()
-
-        cursor.execute(f'SELECT id FROM sys.areas WHERE nombre = \'{area}\'')
-        id = cursor.fetchone()
-        if cursor.rowcount == 0:
-            return False
-        
-        cursor.execute(f'DELETE FROM sys.areas WHERE id = {id[0]}')
-        conn.commit()
-        
-        return True
+        return salida[0]   
 
     def procesar_operacion_cliente(self, operacion):
         datos = operacion.split("|")
@@ -204,32 +190,26 @@ class MasterNode:
             else:
                 print("Nodo Maestro: ERROR")
                 return "ERROR"
-
+            
         elif accion == "ADD_AREA":
             area = datos[1]
-            cursor = conn.cursor()
-            cursor.execute(f'SELECT COUNT(*) FROM sys.areas WHERE nombre = \'{area}\'')
-            id = cursor.fetchone()
-            if id[0] > 0:
-                return f"Error, ya existe esa seccion de noticias..."
+            resp = master_node.obtenerNodoLibre()
+            if resp:
+                print(f"Nodo Maestro: el nodo correspondiente es: {resp}")
+                return f"{resp}"
             else:
-                cursor.execute(f'INSERT INTO sys.areas (nombre) VALUES (\'{area}\') RETURNING id')
-                conn.commit()
-                id = cursor.fetchone()
-                new_area_id = id[0]
-                id_nodo_asignado = self.obtenerIdNodoLibre()
-                cursor.execute(f'INSERT INTO sys.asignaciones (comisionid, areaid) VALUES (\'{id_nodo_asignado}\', \'{new_area_id}\')')
-                conn.commit()
-
-            return f"Creacion exitosa del area de noticias: {area}"
-
-        elif accion == "DEL_AREA":
+                print("Nodo Maestro: ERROR")
+                return "ERROR"
+            
+        elif accion == "DEL_AREA": 
             area = datos[1]
-            resultado = self.borrarArea(area)           
-            if resultado == False:
-                return f"No existe esa seccion de noticias..."
-                        
-            return f"Eliminacion exitosa del area de noticias: {area}"
+            resp = master_node.obtenerNodoLibre()
+            if resp:
+                print(f"Nodo Maestro: el nodo correspondiente es: {resp}")
+                return f"{resp}"
+            else:
+                print("Nodo Maestro: ERROR")
+                return "ERROR"        
 
         else:
             return "Operación inválida."         
@@ -248,8 +228,32 @@ class MasterNode:
         if cursor.rowcount == 0:
             return False
 
-        rnd = random.randint(0,cursor.rowcount-1)
-        seleccionado = rows[rnd] 
+        comisiones = []
+        for comision in rows:
+            try:   
+                # Crear el socket TCP
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # Conectar al nodo maestro
+                sock.connect((comision[0], 8005))
+
+                # Enviar la solicitud de noticias al nodo maestro
+                sock.send("HEALTHCHECK".encode())
+
+                # Recibir las ubicaciones de nodos del nodo maestro
+                respuesta = sock.recv(65507).decode()
+
+                print(f"Healthcheck {respuesta} - {comision[0]}:8005")
+                comisiones.append(comision)
+            except Exception:
+                print(f"{comision[0]} no esta disponible")
+
+            finally:
+                # Cerrar la conexión
+                sock.close()
+
+
+        rnd = random.randint(0,len(comisiones)-1)
+        seleccionado = comisiones[rnd] 
 
         salida =f'{seleccionado[0]}'        
         # Cerrar el cursor

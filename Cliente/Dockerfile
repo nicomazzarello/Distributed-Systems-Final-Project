@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 RUN apt-get update
-RUN apt-get install -y python3 python3-pip python3-psycopg2 openssh-server grep mlocate sudo -y
+RUN apt-get install -y python3 python3-pip python3-psycopg2 openssh-server sudo -y
 RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 999 test 
 
 RUN echo 'test:test' | chpasswd

@@ -270,14 +270,30 @@ if __name__ == "__main__":
         elif isadmin == "True" and opcion == "11":
             area = input("Ingrese el nombre del área de noticias que desea agregar: ")
             operacion = f"ADD_AREA|{area}"
-            respuesta = agente.send_and_receive_master(operacion)
-            print(respuesta)
+            resp = agente.send_and_receive_master(operacion)
+            if resp == "ERROR":
+                print(f"No se pudo obtener el nodo que contenga el area {area}")
+            else:
+                sock = agente.conectar_al_nodo(resp)
+                if sock:
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif isadmin == "True" and opcion == "12":
             area = input("Ingrese el nombre del área de noticias que desea eliminar: ")
             operacion = f"DEL_AREA|{area}"
-            respuesta = agente.send_and_receive_master(operacion)
-            print(respuesta)
+            resp = agente.send_and_receive_master(operacion)
+            if resp == "ERROR":
+                print(f"No se pudo obtener el nodo que contenga el area {area}")
+            else:
+                sock = agente.conectar_al_nodo(resp)
+                if sock:
+                    agente.send_nodo(operacion, sock)
+                    respuesta = agente.receive_nodo(sock)
+                    print(respuesta)
+                    agente.desconectar_del_nodo(sock)
 
         elif opcion == "10":
             break

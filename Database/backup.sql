@@ -354,7 +354,7 @@ ALTER TABLE ONLY sys.asignaciones
 --
 
 ALTER TABLE ONLY sys.noticias
-    ADD CONSTRAINT noticias_fk FOREIGN KEY (areaid) REFERENCES sys.areas(id);
+    ADD CONSTRAINT noticias_fk FOREIGN KEY (areaid) REFERENCES sys.areas(id) ON DELETE CASCADE;
 
 
 --
