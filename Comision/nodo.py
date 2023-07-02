@@ -241,26 +241,27 @@ class DataNode:
             area = datos[2]
             ultimoID = datos[3]
             resp = self.obtenerNoticias(cliente, area, ultimoID)
-            if resp == -1:
+            
+            if (resp == 0):
+                print(f"Nodo: el cliente {cliente} esta al dia")
+                self.enviarMensaje(socket, "0")
+                return 0
+            elif (resp == -1):
                 print(f"Nodo: el cliente {cliente} no esta subscripto")
                 self.enviarMensaje(socket, "-1")
                 return -1
-            
-            aux = f'{len(resp)}'
-            self.enviarMensaje(socket, aux)
-            socket.recv(65507).decode()
-
-            if resp == 0:
-                self.enviarMensaje(socket, "0")
-                return 0
-            
-            for noticia in resp:
-                msj = f"{noticia[0]}|{noticia[1]}"
-                print(msj)
-                self.enviarMensaje(socket,msj) 
+            else:
+                aux = f'{len(resp)}'
+                self.enviarMensaje(socket, aux)
                 socket.recv(65507).decode()
 
-            return True
+                for noticia in resp:
+                    msj = f"{noticia[0]}|{noticia[1]}"
+                    print(msj)
+                    self.enviarMensaje(socket,msj) 
+                    socket.recv(65507).decode()
+
+                return True
         
         elif accion == "ADD":
             cliente = datos[1]

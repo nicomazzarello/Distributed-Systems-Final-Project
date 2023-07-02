@@ -202,7 +202,7 @@ if __name__ == "__main__":
                     ultimoID = 0
             else:
                 print("Ingreso un numero incorrecto")
-
+            #print(f"VALOOR QUE TIENE ULTIMOID {ultimoID}")
             operacion = f"NEWS|{cliente}|{area}|{ultimoID}"
             resp = agente.send_and_receive_master(operacion)
             if resp == "ERROR":
@@ -212,20 +212,22 @@ if __name__ == "__main__":
                 if sock: 
                     agente.send_nodo(operacion, sock)
                     respuesta = agente.receive_nodo(sock)
+                    #print(f"Salida que obtengo del NEWS: {respuesta}")
                     agente.send_nodo("ok", sock)
-                    if respuesta == "-1":
+                    if (respuesta == "-1"):
                         print(f"Cliente: {cliente} no esta subscripto al area {area}")
                 
-                    elif respuesta == "0":
-                        print(f"El cliente: {cliente} esta al dia")
-                    else:
-                        for i in range(int(respuesta)):
+                    elif (respuesta == "0"):
+                        print(f"Cliente: {cliente} esta al dia con las noticias")
                         
+                    else:
+                        for i in range(int(respuesta)):                        
                             resp = agente.receive_nodo(sock)
                             agente.send_nodo("ok", sock)
                             datos = resp.split("|")
                             clienteActual.lecturas[f"{area}"] = datos[1]
-                            print(datos[0])            
+                            print(datos[0])  
+                             
                     agente.desconectar_del_nodo(sock)
 
         elif opcion == "6":
