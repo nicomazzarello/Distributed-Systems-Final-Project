@@ -233,7 +233,7 @@ class DataNode:
                 msj =f"Nodo: Desubscripcion exitosa del cliente: {cliente} al area {area}"
                 self.enviarMensaje(socket,msj)
             else:
-                msj ="Nodo: Error en desubscripcion"
+                msj =f"Nodo: Cliente {cliente} no esta suscripto al area {area}"
                 self.enviarMensaje(socket,msj)   
             
         elif accion == "NEWS":
